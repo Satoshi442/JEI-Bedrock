@@ -1,0 +1,39 @@
+name: Build JEI-Bedrock
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y cmake ninja-build clang
+
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: |
+          cmake --build build --parallel
+
+      - name: Find libraries
+        run: |
+          find build -name "*.so" -type f -print
+
+      - name: Upload SO
+        uses: actions/upload-artifact@v4
+        with:
+          name: JEI-Bedrock-so
+          path: build/**/*.so
