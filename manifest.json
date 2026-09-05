@@ -1,0 +1,8 @@
+{
+  "type": "preload-native",
+  "name": "JEI-Bedrock",
+  "author": "Kunal",
+  "version": "0.1.0",
+  "entry": "libjeibedrock.so",
+  "minecraft_versions": []
+}
