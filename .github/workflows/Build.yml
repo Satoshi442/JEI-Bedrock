@@ -1,9 +1,10 @@
 name: Build JEI-Bedrock
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
@@ -13,27 +14,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK r28c
+        run: sdkmanager "ndk;28.2.13676358"
+
+      - name: Install CMake and Ninja
         run: |
-          sudo apt update
-          sudo apt install -y cmake ninja-build clang
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
+
+      - name: Set NDK path
+        run: |
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/28.2.13676358" >> "$GITHUB_ENV"
+          echo "$ANDROID_SDK_ROOT/ndk/28.2.13676358" >> "$GITHUB_PATH"
+
+      - name: Verify NDK
+        run: |
+          echo "NDK: $ANDROID_NDK_HOME"
+          test -f "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake"
+          ls "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
 
       - name: Configure
         run: |
-          cmake -S . -B build \
-            -G Ninja \
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-24 \
             -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: |
-          cmake --build build --parallel
+        run: cmake --build build --parallel
 
-      - name: Find libraries
-        run: |
-          find build -name "*.so" -type f -print
+      - name: Find shared libraries
+        run: find build -type f -name "*.so" -print
 
       - name: Upload SO
         uses: actions/upload-artifact@v4
         with:
-          name: JEI-Bedrock-so
+          name: JEIBedrock-arm64
           path: build/**/*.so
